@@ -20,6 +20,9 @@ func Handler() http.Handler {
 	}
 	handleFunc("GET /ready", statusHandler{code: 200})
 
+	// use versioning in headers rather than paths?
+	handleFunc("POST /upload-blob", handleUploadBlob(&discardUploader{}))
+
 	h := AcceptHandler(mux)
 	return h
 }

@@ -12,6 +12,16 @@ import (
 
 var acceptAll = func(r *http.Request) { r.Header.Set("Accept", "*/*") }
 
+func Test_handleUploadBlob(t *testing.T) {
+	t.Run("OK", func(t *testing.T) {
+		c, ctx := newClient(t), context.Background()
+
+		res, err := c.PostFile(ctx, "POST /upload-blob", "testdata/hello.txt")
+		is.OK(t, err) // return echo response
+		is.Equal(t, res.StatusCode, http.StatusOK)
+	})
+}
+
 func Test_handleReady(t *testing.T) {
 	t.Run("OK", func(t *testing.T) {
 		c, ctx := newClient(t), context.Background()
