@@ -12,10 +12,22 @@ import (
 )
 
 type Uploader[V any] interface {
-	Upload(ctx context.Context, filename string, r io.Reader) (id V, sz int64, err error)
+	Upload(ctx context.Context, r io.Reader) (id V, sz int64, err error)
 }
 
 func handleUploadBlob[V any](up Uploader[V]) http.HandlerFunc {
+	var unsupportedMediaType = statusHandler{
+		code: http.StatusUnsupportedMediaType,
+		s:    `request is not a mulitpart/form`,
+	}
+
+	var unprocessableEntity = func(format string, v ...any) statusHandler {
+		return statusHandler{
+			code: http.StatusUnprocessableEntity,
+			s:    fmt.Sprintf(format, v...),
+		}
+	}
+
 	type completed struct {
 		ID      string `json:"resourceId"`
 		Size    int64  `json:"bytesWritten"`
@@ -27,20 +39,22 @@ func handleUploadBlob[V any](up Uploader[V]) http.HandlerFunc {
 
 		mr, err := r.MultipartReader()
 		if err != nil {
-			// unsupportedMediaType
+			unsupportedMediaType.ServeHTTP(w, r)
 			return
 		}
 		part, err := mr.NextPart()
 		if err != nil {
-			// unprocessableEntity
+			unprocessableEntity("failed to decode part: %v", err).ServeHTTP(w, r)
 			return
 		}
 		defer part.Close()
 		// validate filename/formname
 		filename := part.FileName()
-		id, sz, err := up.Upload(ctx, filename, part)
+		debug.Printf("%q := part.FileName()", filename)
+		id, sz, err := up.Upload(ctx, part)
 		if err != nil {
-			// Error(w, r, error)
+			// "failed to upload file: %v", err
+			Error(w, r, err)
 			return
 		}
 		// todo: render function
@@ -59,7 +73,8 @@ func handleUploadBlob[V any](up Uploader[V]) http.HandlerFunc {
 type discardUploader struct{}
 
 // discardUploader implements [Uploader]
-func (*discardUploader) Upload(ctx context.Context, name string, r io.Reader) (bool, int64, error) {
+func (*discardUploader) Upload(ctx context.Context, r io.Reader) (bool, int64, error) {
+	// inject random errors
 	n, err := io.Copy(io.Discard, r)
 	if err != nil {
 		return false, n, err

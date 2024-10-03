@@ -3,6 +3,8 @@ package http
 import (
 	"net/http"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -13,7 +15,7 @@ const (
 	DefaultMaxBytes       = 1 << 20 // Cloudflare's free tier limits of 100mb
 )
 
-func Handler() http.Handler {
+func Handler(up Uploader[uuid.UUID]) http.Handler {
 	mux := http.NewServeMux()
 	handleFunc := func(pattern string, h http.Handler) {
 		mux.Handle(pattern, h)
@@ -21,7 +23,7 @@ func Handler() http.Handler {
 	handleFunc("GET /ready", statusHandler{code: 200})
 
 	// use versioning in headers rather than paths?
-	handleFunc("POST /upload-blob", handleUploadBlob(&discardUploader{}))
+	handleFunc("POST /upload-blob", handleUploadBlob(up))
 
 	h := AcceptHandler(mux)
 	return h

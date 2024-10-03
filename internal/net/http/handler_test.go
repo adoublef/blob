@@ -34,7 +34,12 @@ func Test_handleReady(t *testing.T) {
 
 func newClient(tb testing.TB) *TestClient {
 	tb.Helper()
-	tc := newTestClient(tb, Handler())
+
+	var (
+		up = newTestUploader(tb)
+	)
+
+	tc := newTestClient(tb, Handler(up))
 	// https://speed.cloudflare.com/
 	bu, err := tc.AddToxic("bandwidth", true, &toxics.BandwidthToxic{Rate: 72.8 * 1000})
 	is.OK(tb, err) // return bandwidth upstream toxic
