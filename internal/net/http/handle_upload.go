@@ -68,16 +68,3 @@ func handleUploadBlob[V any](up Uploader[V]) http.HandlerFunc {
 		debug.Printf(`%v = json.NewEncoder(w).Encode(%#v)`, err, c)
 	}
 }
-
-// discardUploader is a test helper that should techincally live only undet `_test.go` files.
-type discardUploader struct{}
-
-// discardUploader implements [Uploader]
-func (*discardUploader) Upload(ctx context.Context, r io.Reader) (bool, int64, error) {
-	// inject random errors
-	n, err := io.Copy(io.Discard, r)
-	if err != nil {
-		return false, n, err
-	}
-	return true, n, nil
-}
