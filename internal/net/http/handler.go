@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -15,7 +16,12 @@ const (
 	DefaultMaxBytes       = 1 << 20 // Cloudflare's free tier limits of 100mb
 )
 
-func Handler(up Uploader[uuid.UUID]) http.Handler {
+type UpDownloader[K fmt.Stringer] interface {
+	Uploader[K]
+	Downloader
+}
+
+func Handler(up UpDownloader[uuid.UUID]) http.Handler {
 	mux := http.NewServeMux()
 	handleFunc := func(pattern string, h http.Handler) {
 		mux.Handle(pattern, h)
@@ -23,7 +29,8 @@ func Handler(up Uploader[uuid.UUID]) http.Handler {
 	handleFunc("GET /ready", statusHandler{code: 200})
 
 	// use versioning in headers rather than paths?
-	handleFunc("POST /upload-blob", handleUploadBlob(up))
+	handleFunc("POST /cloud-storage/files", handleUploadCloudStorage(up))
+	handleFunc("GET /cloud-storage/files/{file}", handleDownloadCloudStorage(up))
 
 	h := AcceptHandler(mux)
 	return h

@@ -17,14 +17,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/google/uuid"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/minio"
+	csos "go.adoublef/blob/internal/cstorage/os"
+	"go.adoublef/blob/internal/cstorage/os/ostest"
 	. "go.adoublef/blob/internal/net/http"
 	"go.adoublef/blob/internal/net/http/httputil"
 	"go.adoublef/blob/internal/net/nettest"
-	ospkg "go.adoublef/blob/internal/os"
-	"go.adoublef/blob/internal/os/ostest"
 	"go.adoublef/blob/internal/testing/is"
 )
 
@@ -115,11 +114,11 @@ func newTestClient(tb testing.TB, h http.Handler) *TestClient {
 	return &TestClient{tc, proxy, tb}
 }
 
-type TestUploader[V any] struct {
-	Uploader[V]
+type TestUploader struct {
+	*csos.Client
 }
 
-func newTestUploader(tb testing.TB) *TestUploader[uuid.UUID] {
+func newTestUploader(tb testing.TB) *TestUploader {
 	url, err := compose.minio.ConnectionString(context.Background())
 	is.OK(tb, err) // return minio connetion string
 
@@ -153,7 +152,7 @@ func newTestUploader(tb testing.TB) *TestUploader[uuid.UUID] {
 	_, err = client.CreateBucket(context.Background(), p)
 	is.OK(tb, err) // create bucket
 
-	return &TestUploader[uuid.UUID]{Uploader: ospkg.NewUploader(bucket, client)}
+	return &TestUploader{Client: csos.New(bucket, client)}
 }
 
 var compose struct {
