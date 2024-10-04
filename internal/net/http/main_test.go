@@ -9,7 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
-	"os"
+	ospkg "os"
 	"strings"
 	"testing"
 
@@ -19,11 +19,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/minio"
-	csos "go.adoublef/blob/internal/cstorage/os"
-	"go.adoublef/blob/internal/cstorage/os/ostest"
 	. "go.adoublef/blob/internal/net/http"
 	"go.adoublef/blob/internal/net/http/httputil"
 	"go.adoublef/blob/internal/net/nettest"
+	"go.adoublef/blob/internal/os"
+	"go.adoublef/blob/internal/os/ostest"
 	"go.adoublef/blob/internal/testing/is"
 )
 
@@ -115,7 +115,7 @@ func newTestClient(tb testing.TB, h http.Handler) *TestClient {
 }
 
 type TestUploader struct {
-	*csos.Client
+	*os.Client
 }
 
 func newTestUploader(tb testing.TB) *TestUploader {
@@ -152,7 +152,7 @@ func newTestUploader(tb testing.TB) *TestUploader {
 	_, err = client.CreateBucket(context.Background(), p)
 	is.OK(tb, err) // create bucket
 
-	return &TestUploader{Client: csos.New(bucket, client)}
+	return &TestUploader{Client: os.New(bucket, client)}
 }
 
 var compose struct {
@@ -162,16 +162,16 @@ var compose struct {
 func TestMain(m *testing.M) {
 	err := setup(context.Background())
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
+		fmt.Fprintf(ospkg.Stderr, "%v\n", err)
+		ospkg.Exit(1)
 	}
 	code := m.Run()
 	err = cleanup(context.Background())
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
+		fmt.Fprintf(ospkg.Stderr, "%v\n", err)
+		ospkg.Exit(1)
 	}
-	os.Exit(code)
+	ospkg.Exit(code)
 }
 
 func setup(ctx context.Context) (err error) {
